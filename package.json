@@ -1,0 +1,14 @@
+{
+  "name": "jsmv",
+  "version": "0.0.1",
+  "description": "Move js files and update all requires automatically.",
+  "main": "jsmv.js",
+  "dependencies": {
+    "walk": "~2.2.1",
+    "uglify-js": "~2.4.0"
+  },
+  "devDependencies": {},
+  "repository": "",
+  "author": "Paul Baumgart <paul@proxv.com>",
+  "license": "BSD"
+}
