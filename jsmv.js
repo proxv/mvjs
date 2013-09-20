@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var fs = require('fs');
+var Module = require('module');
 var path = require('path');
 var uglifyjs = require('uglify-js');
 var walk = require('walk');
@@ -73,11 +74,18 @@ function updateRequires(fileToUpdate, fromPath, toPath) {
   var dirname = path.dirname(fileToUpdate);
 
   findRelativeRequireArgs(code.text, fileToUpdate).forEach(function(arg) {
-    var fullRequirePath = path.resolve(dirname, arg.value);
+    var fullRequirePath = Module._resolveFilename(arg.value, {
+      filename: fileToUpdate,
+      id: fileToUpdate,
+      paths: Module._nodeModulePaths(dirname)
+    });
     if (fullRequirePath === fromPath) {
       var newValue = path.relative(dirname, toPath);
       if (!isRelativeRequire(newValue)) {
         newValue = './' + newValue;
+      }
+      if (!path.extname(arg.value)) {
+        newValue = path.basename(newValue, path.extname(newValue));
       }
       code.updateNodeValue(arg, newValue);
     }
@@ -133,10 +141,10 @@ if (fs.existsSync(newFileLocation) && fs.statSync(newFileLocation).isDirectory()
   newFileLocation = path.join(newFileLocation, path.basename(fileToMove));
 }
 
-moveRequires(fileToMove, newFileLocation);
-fs.renameSync(fileToMove, newFileLocation);
-console.log('Moved ' + path.relative(process.cwd(), fileToMove) +
-            ' to ' + path.relative(process.cwd(), newFileLocation));
-
-updateAllFiles(process.cwd(), fileToMove, newFileLocation);
+updateAllFiles(process.cwd(), fileToMove, newFileLocation, function() {
+  moveRequires(fileToMove, newFileLocation);
+  fs.renameSync(fileToMove, newFileLocation);
+  console.log('Moved ' + path.relative(process.cwd(), fileToMove) +
+              ' to ' + path.relative(process.cwd(), newFileLocation));
+});
 
