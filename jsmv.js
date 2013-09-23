@@ -74,11 +74,15 @@ function updateRequires(fileToUpdate, fromPath, toPath) {
   var dirname = path.dirname(fileToUpdate);
 
   findRelativeRequireArgs(code.text, fileToUpdate).forEach(function(arg) {
-    var fullRequirePath = Module._resolveFilename(arg.value, {
-      filename: fileToUpdate,
-      id: fileToUpdate,
-      paths: Module._nodeModulePaths(dirname)
-    });
+    try {
+      var fullRequirePath = Module._resolveFilename(arg.value, {
+        filename: fileToUpdate,
+        id: fileToUpdate,
+        paths: Module._nodeModulePaths(dirname)
+      });
+    } catch (err) {
+      // Ignore it
+    }
     if (fullRequirePath === fromPath) {
       var newValue = path.relative(dirname, toPath);
       if (!isRelativeRequire(newValue)) {
