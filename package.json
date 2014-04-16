@@ -1,8 +1,9 @@
 {
-  "name": "jsmv",
-  "version": "0.0.1",
+  "name": "mvjs",
+  "version": "0.0.2",
   "description": "Move js files and update all requires automatically.",
-  "main": "jsmv.js",
+  "main": "mvjs.js",
+  "bin": "bin/mvjs",
   "dependencies": {
     "walk": "~2.2.1",
     "uglify-js": "~2.4.0"

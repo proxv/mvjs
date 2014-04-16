@@ -1,0 +1,25 @@
+#!/usr/bin/env node
+
+var fs = require('fs');
+var path = require('path');
+var mvjs = require('../mvjs.js');
+
+if (process.argv.length < 4) {
+  console.log('Usage: ' + path.basename(process.argv[1]) + ' <file_to_move> <new_location>');
+  process.exit(1);
+}
+
+var fileToMove = path.resolve(process.argv[2]);
+var newFileLocation = path.resolve(process.argv[3]);
+if (fs.existsSync(newFileLocation) && fs.statSync(newFileLocation).isDirectory()) {
+  newFileLocation = path.join(newFileLocation, path.basename(fileToMove));
+}
+
+mvjs(process.cwd(), fileToMove, newFileLocation, function(filesModified) {
+  console.log('Moved ' + path.relative(process.cwd(), fileToMove) + ' to ' + path.relative(process.cwd(), newFileLocation));
+  if (filesModified.length > 0) {
+    console.log('Requires updated in files:\n  ' + filesModified.join('\n  '));
+  } else {
+    console.log('No other files modified.');
+  }
+});

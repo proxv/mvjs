@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 var fs = require('fs');
 var Module = require('module');
 var path = require('path');
@@ -116,39 +114,33 @@ function moveRequires(fileToUpdate, newFileLocation) {
   return code.modified;
 }
 
-function updateAllFiles(directory, fromPath, toPath, cb) {
-  var fsWalker = walk.walk(directory);
+function updateAllFiles(rootDir, fromPath, toPath, cb) {
+  var fsWalker = walk.walk(rootDir);
+  var filesModified = [];
 
   fsWalker.on('file', function (root, fileStats, next) {
     var fileName = path.join(root, fileStats.name);
     if (!/\/node_modules\//.test(fileName) && /\.js$/i.test(fileName) &&
         fileName !== fromPath && fileName !== toPath) {
-      var changedText = updateRequires(fileName, fileToMove, newFileLocation);
-      if (changedText) {
-        console.log('Updated requires for file: ' + path.relative(process.cwd(), fileName));
+      var modified = updateRequires(fileName, fromPath, toPath);
+      if (modified) {
+        filesModified.push(path.relative(rootDir, fileName));
       }
     }
     next();
   });
 
-  cb && fsWalker.on('end', cb);
+  cb && fsWalker.on('end', function() {
+    cb(filesModified);
+  });
 }
 
-if (process.argv.length < 4) {
-  console.log('Usage: ' + path.basename(process.argv[1]) + ' <file_to_move> <new_location>');
-  process.exit(1);
+function moveJsFile(rootDir, fromPath, toPath, cb) {
+  updateAllFiles(rootDir, fromPath, toPath, function(filesModified) {
+    moveRequires(fromPath, toPath);
+    fs.renameSync(fromPath, toPath);
+    cb(filesModified);
+  });
 }
 
-var fileToMove = path.resolve(process.argv[2]);
-var newFileLocation = path.resolve(process.argv[3]);
-if (fs.existsSync(newFileLocation) && fs.statSync(newFileLocation).isDirectory()) {
-  newFileLocation = path.join(newFileLocation, path.basename(fileToMove));
-}
-
-updateAllFiles(process.cwd(), fileToMove, newFileLocation, function() {
-  moveRequires(fileToMove, newFileLocation);
-  fs.renameSync(fileToMove, newFileLocation);
-  console.log('Moved ' + path.relative(process.cwd(), fileToMove) +
-              ' to ' + path.relative(process.cwd(), newFileLocation));
-});
-
+module.exports = moveJsFile;
