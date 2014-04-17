@@ -1,6 +1,6 @@
 {
   "name": "mvjs",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Move js files and update all requires automatically.",
   "main": "mvjs.js",
   "bin": "bin/mvjs",

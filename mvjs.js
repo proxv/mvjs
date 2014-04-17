@@ -139,7 +139,7 @@ function moveJsFile(rootDir, fromPath, toPath, cb) {
   updateAllFiles(rootDir, fromPath, toPath, function(filesModified) {
     moveRequires(fromPath, toPath);
     fs.renameSync(fromPath, toPath);
-    cb(filesModified);
+    cb && cb(filesModified);
   });
 }
 
