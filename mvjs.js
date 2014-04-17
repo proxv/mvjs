@@ -25,11 +25,9 @@ SourceCode.prototype = {
     this.modified = true;
   },
 
-  writeIfModified: function(fileName) {
+  write: function(fileName) {
     fileName = fileName || this._fileName;
-    if (this.modified) {
-      fs.writeFileSync(fileName, (this._crlf ? this.text.replace(/\n/g, '\r\n') : this.text));
-    }
+    fs.writeFileSync(fileName, (this._crlf ? this.text.replace(/\n/g, '\r\n') : this.text));
   }
 
 };
@@ -67,7 +65,7 @@ function findRelativeRequireArgs(text, fileName) {
 }
 
 // all paths must be absolute
-function updateRequires(fileToUpdate, fromPath, toPath) {
+function updateRequires(fileToUpdate, fromPath, toPath, filterFn) {
   var code = new SourceCode(fileToUpdate);
   var dirname = path.dirname(fileToUpdate);
 
@@ -92,9 +90,15 @@ function updateRequires(fileToUpdate, fromPath, toPath) {
       code.updateNodeValue(arg, newValue);
     }
   });
-
-  code.writeIfModified();
-  return code.modified;
+  if (code.modified) {
+    if (typeof filterFn === 'function') {
+      code.text = filterFn(fileToUpdate, code.text) || code.text;
+    }
+    code.write();
+    return true;
+  } else {
+    return false;
+  }
 }
 
 function moveRequires(fileToUpdate, newFileLocation) {
@@ -110,37 +114,64 @@ function moveRequires(fileToUpdate, newFileLocation) {
     code.updateNodeValue(arg, newValue);
   });
 
-  code.writeIfModified();
-  return code.modified;
+  if (code.modified) {
+    code.write();
+    return true;
+  } else {
+    return false;
+  }
 }
 
-function updateAllFiles(rootDir, fromPath, toPath, cb) {
-  var fsWalker = walk.walk(rootDir);
+function updateAllFiles(options, cb) {
+  var fsWalker = walk.walk(options.rootDir);
   var filesModified = [];
 
   fsWalker.on('file', function (root, fileStats, next) {
     var fileName = path.join(root, fileStats.name);
     if (!/\/node_modules\//.test(fileName) && /\.js$/i.test(fileName) &&
-        fileName !== fromPath && fileName !== toPath) {
-      var modified = updateRequires(fileName, fromPath, toPath);
+        fileName !== options.fromPath && fileName !== options.toPath) {
+      var modified = updateRequires(fileName, options.fromPath, options.toPath, options.filter);
       if (modified) {
-        filesModified.push(path.relative(rootDir, fileName));
+        filesModified.push(path.relative(options.rootDir, fileName));
       }
     }
     next();
   });
 
-  cb && fsWalker.on('end', function() {
-    cb(filesModified);
+  if (cb) {
+    fsWalker.on('error', cb);
+    fsWalker.on('end', function() {
+      cb(null, filesModified);
+    });
+  }
+}
+
+/*
+  Arguments:
+
+  options: object with the following keys:
+    fromPath: (required) source path of the .js file to move, absolute or relative to rootDir
+    toPath:   (required) destination path of the moved .js file, absolute or relative to rootDir
+    rootDir:  (optional) project root directory that gets recursively scanned for references to the file to move
+              default: process.cwd()
+    filter:   (optional) function to call with the path and modified contents of every file that references the moved .js
+              file via require(), so you can do regex substitution or the like. if the function returns a value,
+              that value will overwrite the file.
+              e.g.:
+                function(modifiedFile, fileContents) { return fileContents.replace(/someVar/g, 'anotherVar'); }
+
+  cb: (optional) function to call when move is complete, called with an error, if any, as the first parameter
+      and an array of modified filenames as the second
+      e.g.:
+        function(err, filesModified) { ... }
+*/
+function mvjs(options, cb) {
+  options.rootDir = options.rootDir || process.cwd();
+  updateAllFiles(options, function(err, filesModified) {
+    moveRequires(options.fromPath, options.toPath);
+    fs.renameSync(options.fromPath, options.toPath);
+    cb && cb(err, filesModified);
   });
 }
 
-function moveJsFile(rootDir, fromPath, toPath, cb) {
-  updateAllFiles(rootDir, fromPath, toPath, function(filesModified) {
-    moveRequires(fromPath, toPath);
-    fs.renameSync(fromPath, toPath);
-    cb && cb(filesModified);
-  });
-}
-
-module.exports = moveJsFile;
+module.exports = mvjs;

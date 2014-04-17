@@ -1,15 +1,35 @@
 {
   "name": "mvjs",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Move js files and update all requires automatically.",
   "main": "mvjs.js",
-  "bin": "bin/mvjs",
+  "bin": {
+    "mvjs": "bin/mvjs"
+  },
   "dependencies": {
     "walk": "~2.2.1",
     "uglify-js": "~2.4.0"
   },
   "devDependencies": {},
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/proxv/mvjs.git"
+  },
   "author": "Paul Baumgart <paul@proxv.com>",
-  "license": "BSD"
+  "license": "MIT",
+  "keywords": [
+    "mvjs",
+    "jsmv",
+    "move",
+    "js",
+    "javascript",
+    "require",
+    "commonjs",
+    "module",
+    "browserify"
+  ],
+  "bugs": {
+    "url": "https://github.com/proxv/mvjs/issues"
+  },
+  "homepage": "https://github.com/proxv/mvjs"
 }

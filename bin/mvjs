@@ -15,11 +15,15 @@ if (fs.existsSync(newFileLocation) && fs.statSync(newFileLocation).isDirectory()
   newFileLocation = path.join(newFileLocation, path.basename(fileToMove));
 }
 
-mvjs(process.cwd(), fileToMove, newFileLocation, function(filesModified) {
-  console.log('Moved ' + path.relative(process.cwd(), fileToMove) + ' to ' + path.relative(process.cwd(), newFileLocation));
-  if (filesModified.length > 0) {
-    console.log('Requires updated in files:\n  ' + filesModified.join('\n  '));
+mvjs({ fromPath: fileToMove, toPath: newFileLocation }, function(err, filesModified) {
+  console.log('Moved:', path.relative(process.cwd(), fileToMove), 'to:', path.relative(process.cwd(), newFileLocation));
+  if (err) {
+    console.log('Error:', err);
   } else {
-    console.log('No other files modified.');
+    if (filesModified.length > 0) {
+      console.log('Requires updated in files:\n  ' + filesModified.join('\n  '));
+    } else {
+      console.log('No other files modified.');
+    }
   }
 });
